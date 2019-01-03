@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+echo "Starting cleanup"
+docker system prune --volumes -f
+echo
+echo "Images:"
+docker images
+echo
+echo "Containers:"
+docker ps -a
+echo
+echo "Networks:"
+docker network ls
+echo
+echo "Volumes:"
+docker volume ls
