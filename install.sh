@@ -20,20 +20,7 @@ function main() {
     clone_dotfiles_repo
     install_packages_with_brewfile
     setup_macOS_defaults
-
-    # Setting git user name und email address
-    if [[ ! -f ~/.gitconfig  ]]; then
-        info "Setting git user name and email address"
-        while [[ "$response" != "Y" ]]; do
-            read -r -p "Please enter your full name to be used by git: [e.g. Linus Torvalds]: " fullname
-            read -r -p "Please enter your email address to be used by git: [e.g. linus@torvalds.com]: " email
-            echo -e "I got the name \"$fullname\" and the email address \"$email\""
-            read -r -p "Is this correct? [Y|n] " response
-        done
-
-        git config --global user.name "$fullname"
-        git config --global user.email "$email"
-    fi
+    configure_git
 
     # TODO add the private keys to PWManager
 }
@@ -118,6 +105,22 @@ function setup_macOS_defaults() {
         exit 1
     fi
     echo
+}
+
+function configure_git() {
+    # Setting git user name und email address
+    if [[ ! -f ~/.gitconfig  ]]; then
+        info "Setting git user name and email address"
+        while [[ "$response" != "Y" ]]; do
+            read -r -p "Please enter your full name to be used by git: [e.g. Linus Torvalds]: " fullname
+            read -r -p "Please enter your email address to be used by git: [e.g. linus@torvalds.com]: " email
+            echo -e "I got the name \"$fullname\" and the email address \"$email\""
+            read -r -p "Is this correct? [Y|n] " response
+        done
+
+        git config --global user.name "$fullname"
+        git config --global user.email "$email"
+    fi
 }
 
 function header() {
