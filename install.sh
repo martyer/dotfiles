@@ -7,30 +7,22 @@ function main() {
     echo "This script will install programs and set up most of the configuration on your machine."
     echo "It is idempotent so it can be run multiple times without causing issues."
     echo "In the beginning there might be some things which require user interaction, so beware."
-    echo "I will tell you as soon as you are not required to pay attention anymore."
     echo
 
     #ask_for_sudo
-    #configure_git
     #install_homebrew
+    #add_ssh_key
     #clone_dotfiles_repo
-
-    header "Woop, woop..."
-    echo "Now there should be no more user interaction required. You can lay back and relax."
-    echo
-
     #install_packages_with_brewfile
     #setup_macOS_defaults
-
-    # TODO add the private keys to PWManager
-    # TODO: Add ssh key to keychain
+    #configure_git
 }
 
 function ask_for_sudo() {
     header "Prompting for sudo password"
-    # Check if the sudo password is cached and if it is not ask for it
+    # Check if the sudo password is cached and update its validity timestamp or prompt the user
     if sudo --validate; then
-        # Reset the sudo timestamp by calling sudo --validate every 10 seconds and repeat that until the main script finished
+        # Update the sudo timestamp by calling sudo --validate every 10 seconds and repeat that until the main script finished
         while true; do sudo --non-interactive --validate; sleep 10; kill -0 "$$" || exit; done &
         ok "Sudo credentials acquired"
     else
@@ -42,9 +34,11 @@ function ask_for_sudo() {
 
 function install_homebrew() {
     header "Installing Homebrew"
+    # Check if Homebrew is installed
     if hash brew 2>/dev/null; then
         ok "Homebrew already installed"
     else
+        # Install Homebrew and with it Command Line Tools and therefore also git
         if /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"; then
             ok "Homebrew installation succeeded"
         else
@@ -55,19 +49,29 @@ function install_homebrew() {
     echo
 }
 
+# TODO
+function add_ssh_key() {
+    header "Adding SSH key to .ssh folder and to the macOS keychain"
+    # Symlink .ssh folder
+    ssh-add -K ~/.ssh/id_ed25519
+    echo
+}
+
 function clone_dotfiles_repo() {
     header "Cloning dotfiles repository into $DOTFILES_REPO"
     if test -e "$DOTFILES_REPO"; then
         info "$DOTFILES_REPO already exists"
         info "Pulling latest changes in $DOTFILES_REPO repository"
+        # Prune and fetch all remote branches and pull currently checked out branch
         if git -C "$DOTFILES_REPO" pull --all --prune; then
             ok "Pull successful in $DOTFILES_REPO repository"
         else
-            git -C "$DOTFILES_REPO" reset --merge
-            warn "Error while pulling, check the $DOTFILES_REPO repo manually"
+            # Warn the user if the pull lead to an error
+            error "Pulling $DOTFILES_REPO failed"
+            exit 1
         fi
     else
-        # Cloning dotfiles repo without having to set credentials
+        # Clone dotfiles repository with SSH key
         if git clone "git@github.com:martyer/dotfiles.git" "$DOTFILES_REPO"; then
             ok "Cloned into $DOTFILES_REPO"
         else
@@ -78,6 +82,7 @@ function clone_dotfiles_repo() {
     echo
 }
 
+# TODO
 function install_packages_with_brewfile() {
     BREW_FILE="$DOTFILES_REPO/Brewfile"
 
@@ -95,6 +100,7 @@ function install_packages_with_brewfile() {
     echo
 }
 
+# TODO
 function setup_macOS_defaults() {
     DEFAULTS_SCRIPT="$DOTFILES_REPO/defaults.sh"
 
@@ -114,9 +120,9 @@ function configure_git() {
         ok "Git username already configured"
     else
         while test "$response" != "Y"; do
-            read -r -p "Please enter your full name to be used by git: [e.g. Linus Torvalds]: " fullname
+            read -p "Please enter your full name to be used by git: [e.g. Linus Torvalds]: " fullname
             echo -e "I got the name \"$fullname\""
-            read -r -p "Is this correct? [Y|n] " response
+            read -p "Is this correct? [Y|n] " response
         done
         git config --global --global user.name "$fullname"
         ok "Git username successfully set"
@@ -133,12 +139,6 @@ function configure_git() {
         git config --global user.email "$email"
         ok "Git email successfully set"
     fi
-    echo
-}
-
-function add_ssh_key_to_keychain() {
-    header "Adding SSH key to keychain"
-    ssh-add -K ~/.ssh/[your-private-key]
     echo
 }
 
