@@ -23,6 +23,7 @@ function main() {
     configure_git
 
     # TODO add the private keys to PWManager
+    # TODO: Add ssh key to keychain
 }
 
 function ask_for_sudo() {
@@ -108,19 +109,37 @@ function setup_macOS_defaults() {
 }
 
 function configure_git() {
-    # Setting git user name und email address
-    if [[ ! -f ~/.gitconfig  ]]; then
-        info "Setting git user name and email address"
-        while [[ "$response" != "Y" ]]; do
+    header "Configuring git username and email"
+    if git config --global --get user.name; then
+        ok "Git username already configured"
+    else
+        while test "$response" != "Y"; do
             read -r -p "Please enter your full name to be used by git: [e.g. Linus Torvalds]: " fullname
-            read -r -p "Please enter your email address to be used by git: [e.g. linus@torvalds.com]: " email
-            echo -e "I got the name \"$fullname\" and the email address \"$email\""
+            echo -e "I got the name \"$fullname\""
             read -r -p "Is this correct? [Y|n] " response
         done
-
-        git config --global user.name "$fullname"
-        git config --global user.email "$email"
+        git config --global --global user.name "$fullname"
+        ok "Git username successfully set"
     fi
+
+    if git config --global --get user.email; then
+        ok "Email already configured"
+    else
+        while test "$response" != "Y"; do
+            read -r -p "Please enter your email address to be used by git: [e.g. linus@torvalds.com]: " email
+            echo -e "I got the email address \"$email\""
+            read -r -p "Is this correct? [Y|n] " response
+        done
+        git config --global user.email "$email"
+        ok "Git email successfully set"
+    fi
+    echo
+}
+
+function add_ssh_key_to_keychain() {
+    header "Adding SSH key to keychain"
+    ssh-add -K ~/.ssh/[your-private-key]
+    echo
 }
 
 function header() {
