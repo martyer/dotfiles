@@ -10,17 +10,17 @@ function main() {
     echo "I will tell you as soon as you are not required to pay attention anymore."
     echo
 
-    ask_for_sudo
-    install_homebrew
+    #ask_for_sudo
+    #configure_git
+    #install_homebrew
+    #clone_dotfiles_repo
 
     header "Woop, woop..."
     echo "Now there should be no more user interaction required. You can lay back and relax."
     echo
 
-    clone_dotfiles_repo
-    install_packages_with_brewfile
-    setup_macOS_defaults
-    configure_git
+    #install_packages_with_brewfile
+    #setup_macOS_defaults
 
     # TODO add the private keys to PWManager
 }
@@ -29,8 +29,8 @@ function ask_for_sudo() {
     header "Prompting for sudo password"
     # Check if the sudo password is cached and if it is not ask for it
     if sudo --validate; then
-        # Reset the sudo timestamp by calling sudo true every minute and repeat that until the main script finished
-        while true; do sudo --non-interactive true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+        # Reset the sudo timestamp by calling sudo --validate every 10 seconds and repeat that until the main script finished
+        while true; do sudo --non-interactive --validate; sleep 10; kill -0 "$$" || exit; done &
         ok "Sudo credentials acquired"
     else
         error "Obtaining sudo credentials failed"
@@ -59,15 +59,15 @@ function clone_dotfiles_repo() {
     if test -e "$DOTFILES_REPO"; then
         info "$DOTFILES_REPO already exists"
         info "Pulling latest changes in $DOTFILES_REPO repository"
-        if git -C "$DOTFILES_REPO" pull origin master &> /dev/null; then
+        if git -C "$DOTFILES_REPO" pull --all --prune; then
             ok "Pull successful in $DOTFILES_REPO repository"
         else
-            error "Error while pulling, check the $DOTFILES_REPO repo manually"
-            exit 1
+            git -C "$DOTFILES_REPO" reset --merge
+            warn "Error while pulling, check the $DOTFILES_REPO repo manually"
         fi
     else
         # Cloning dotfiles repo without having to set credentials
-        if git clone "https://github.com/martyer/dotfiles.git" "$DOTFILES_REPO"; then
+        if git clone "git@github.com:martyer/dotfiles.git" "$DOTFILES_REPO"; then
             ok "Cloned into $DOTFILES_REPO"
         else
             error "Cloning into $DOTFILES_REPO failed"
