@@ -11,10 +11,10 @@ function main() {
 
     #ask_for_sudo
     #install_homebrew
-    #add_ssh_key
     #clone_dotfiles_repo
     #install_packages_with_brewfile
     #setup_macOS_defaults
+    #add_ssh_key
     #configure_git
 }
 
@@ -49,14 +49,6 @@ function install_homebrew() {
     echo
 }
 
-# TODO
-function add_ssh_key() {
-    header "Adding SSH key to .ssh folder and to the macOS keychain"
-    # Symlink .ssh folder
-    ssh-add -K ~/.ssh/id_ed25519
-    echo
-}
-
 function clone_dotfiles_repo() {
     header "Cloning dotfiles repository into $DOTFILES_REPO"
     if test -e "$DOTFILES_REPO"; then
@@ -66,13 +58,12 @@ function clone_dotfiles_repo() {
         if git -C "$DOTFILES_REPO" pull --all --prune; then
             ok "Pull successful in $DOTFILES_REPO repository"
         else
-            # Warn the user if the pull lead to an error
             error "Pulling $DOTFILES_REPO failed"
             exit 1
         fi
     else
-        # Clone dotfiles repository with SSH key
-        if git clone "git@github.com:martyer/dotfiles.git" "$DOTFILES_REPO"; then
+        # Clone dotfiles repository via HTTPS, as this does not need ssh keys to be set up and does not query the user
+        if git clone "https://github.com/martyer/dotfiles.git" "$DOTFILES_REPO"; then
             ok "Cloned into $DOTFILES_REPO"
         else
             error "Cloning into $DOTFILES_REPO failed"
@@ -82,7 +73,6 @@ function clone_dotfiles_repo() {
     echo
 }
 
-# TODO
 function install_packages_with_brewfile() {
     BREW_FILE="$DOTFILES_REPO/Brewfile"
 
@@ -100,17 +90,24 @@ function install_packages_with_brewfile() {
     echo
 }
 
-# TODO
 function setup_macOS_defaults() {
     DEFAULTS_SCRIPT="$DOTFILES_REPO/defaults.sh"
 
     header "Updating macOS defaults"
-    if source "$DEFAULTS_SCRIPT"; then
+    if bash "$DEFAULTS_SCRIPT"; then
         ok "Defaults setup succeeded"
     else
         error "Defaults setup failed"
         exit 1
     fi
+    echo
+}
+
+# TODO
+function add_ssh_key() {
+    header "Adding SSH key to .ssh folder and to the macOS keychain"
+    # Symlink .ssh folder
+    ssh-add -K ~/.ssh/id_ed25519
     echo
 }
 
@@ -140,6 +137,38 @@ function configure_git() {
         ok "Git email successfully set"
     fi
     echo
+}
+
+# TODO: iTerm2 Schema
+# TODO: Security
+# TODO: PyCharm
+# TODO: Office
+
+# TODO
+function symlink() {
+    source=$1
+    destination=$2
+    destination_directory=$(dirname "$destination")
+
+    info "Symlinking $source to $destination"
+    # Create the destination directory if it does not already exist
+    if ! mkdir -p "$destination_directory"; then
+        error "Creating $destination_directory failed"
+        exit 1
+    fi
+
+    # Backup the file if it already exists
+    if test -f "$destination"; then
+        info "Backing up existing $destination"
+        backup "$destination"
+    fi
+    # Remove file and generate link
+    if rm -rf "$destination" && ln -s "$source" "$destination"; then
+        ok "Symlinking $destination done"
+    else
+        error "Symlinking $destination failed"
+        exit 1
+    fi
 }
 
 function header() {
