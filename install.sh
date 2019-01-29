@@ -53,7 +53,6 @@ function clone_dotfiles_repo() {
     header "Cloning dotfiles repository into $DOTFILES_REPO"
     if test -e "$DOTFILES_REPO"; then
         info "$DOTFILES_REPO already exists"
-        info "Pulling latest changes in $DOTFILES_REPO repository"
         # Prune and fetch all remote branches and pull currently checked out branch
         if git -C "$DOTFILES_REPO" pull --all --prune; then
             ok "Pull successful in $DOTFILES_REPO repository"
@@ -150,25 +149,39 @@ function symlink() {
     destination=$2
     destination_directory=$(dirname "$destination")
 
-    info "Symlinking $source to $destination"
-    # Create the destination directory if it does not already exist
-    if ! mkdir -p "$destination_directory"; then
-        error "Creating $destination_directory failed"
-        exit 1
-    fi
-
-    # Backup the file if it already exists
-    if test -f "$destination"; then
-        info "Backing up existing $destination"
-        backup "$destination"
-    fi
-    # Remove file and generate link
-    if rm -rf "$destination" && ln -s "$source" "$destination"; then
-        ok "Symlinking $destination done"
+    if ! test -L "$destination"; then
+        ok "Symlink from $source to $destination already exists"
     else
-        error "Symlinking $destination failed"
-        exit 1
+        # Backup the file if it already exists
+        if test -f "$destination"; then
+            if backup "$destination"; then
+                ok "Successful backup of $destination"
+            else
+                error "Backup of $destination failed"
+                exit 1
+            fi
+        else
+            # Create the destination directory if it does not already exist
+            if ! mkdir -p "$destination_directory"; then
+                error "Creating $destination_directory failed"
+                exit 1
+            fi
+        fi
+
+        # Generate symlink
+        if ln -s "$source" "$destination"; then
+            ok "Symlinking $destination done"
+        else
+            error "Symlinking $destination failed"
+            exit 1
+        fi
     fi
+}
+
+function backup() {
+    source=$1
+
+    cp
 }
 
 function header() {
